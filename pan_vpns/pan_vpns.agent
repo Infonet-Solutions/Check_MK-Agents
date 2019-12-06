@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+# Author: Edoardo Sausa
+# Contributors: Emil Pandocchi
+# Last Update: 2019-12-06
+
+import getopt
+import sys
+import xml.etree.ElementTree
+import requests
+import urllib3
+
+# Disable SSL certificate verification
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def usage():
+	sys.stderr.write("""Check_MK Palo Alto Network VPN
+USAGE: pan_vpns [OPTIONS] HOST
+       pan_vpns -h
+
+ARGUMENTS:
+  HOST:         Host name or IP address of the Palo Alto Network active node
+
+OPTIONS:
+  -h, --help:   Show this help message and exit
+  -k, --key:    XML API key created for quering the system
+""")
+
+short_options = "hk:"
+long_options = [ "help", "key=" ]
+
+opt_key = None
+opt_host = None
+
+try:
+	opts, args = getopt.getopt( sys.argv[1:], short_options, long_options )
+except getopt.GetoptError as err:
+	sys.stderr.write("%s\n" % err)
+	sys.exit(1)
+
+for opt, arg in opts:
+        if opt in ['-h', '--help']:
+            usage()
+            sys.exit(0)
+        elif opt in ["-k", "--key"]:
+            opt_key = arg
+        elif not opt:
+            usage()
+            sys.exit(0)
+
+if len(args) == 1:
+	opt_host = args[0]
+elif not args:
+	sys.stderr.write("ERROR: No host given.\n")
+	sys.exit(1)
+else:
+	sys.stderr.write("ERROR: Please specify exactly one host.\n")
+	sys.exit(1)
+
+# Compose URL
+url = "https://%s/api/?type=op&cmd=<show><running><tunnel><flow><all></all></flow></tunnel></running></show>&key=%s" % (opt_host, opt_key)
+
+# Get URL without SSL cert verification to avoid error on auto-signed cert
+try:
+	content = requests.get(url, verify=False)
+except requests.exceptions.RequestException as e:
+	sys.stderr.write("Error: %s\n" % e)
+	sys.exit(1)
+
+# Parse data from HTTP GET
+root = xml.etree.ElementTree.fromstring(content.text)
+
+print("<<<pan_vpns>>>")
+for vpn in root.findall('.//IPSec/entry'):
+	name = (vpn.find('./name')).text
+	status = (vpn.find('./state')).text
+	localip = (vpn.find('./localip')).text
+	peerip = (vpn.find('./peerip')).text
+	outer_if = (vpn.find('./outer-if')).text
+	inner_if = (vpn.find('./inner-if')).text
+	payload = name + " " + status + " " + " " + localip + " " + peerip + " " + outer_if + " " + inner_if
+	print(payload)

@@ -1,0 +1,49 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+# Author: Edoardo Sausa
+# Contributors: Emil Pandocchi
+# Last Update: 2019-12-06
+
+def inventory_pan_vpns(info):
+	for i in info:
+		tunnel = i[0]
+		yield tunnel, None
+
+def check_pan_vpns(item, params, info):
+	for i in info:
+		if i[0] == item:
+			name = i[0]
+			status = i[1]
+			localip = i[2]
+			peerip = i[3]
+			outer_if = i[4]
+			inner_if = i[5]
+			returnCode = ""
+			perfData = None
+			if status == u"active":
+				returnCode = "OK"
+				perfData = 0
+			elif status == u"init":
+				returnCode = "WARN"
+				perfData = 1
+			else:
+				returnCode = "CRIT"
+				perfData = 2
+
+			returnPayload = ("%s - "
+					"Tunnel: %s - "
+					"Status: %s - "
+					"LocalIP: %s - "
+					"PeerIP: %s - "
+					"OuterIF: %s - "
+					"InnerIF: %s") %  (returnCode, name, status, localip, peerip, outer_if, inner_if)
+
+			return perfData, returnPayload, [("status", perfData, 1, 2)]
+
+check_info["pan_vpns"] = {
+	"check_function": check_pan_vpns,
+	"inventory_function": inventory_pan_vpns,
+	"service_description": "VPN-IPSec",
+	"has_perfdata": True,
+}
