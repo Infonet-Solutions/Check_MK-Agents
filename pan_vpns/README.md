@@ -28,7 +28,7 @@ A successful response should contain your XML API Key
 
 - in "WATO -> Host & Service Parameters -> Datasource Programs -> Individual program call instead of agent access" create a rule to call the check
 ```
-/omd/sites/{SITENAME}/local/share/check_mk/agents/special/pan_vpns -k {PaloAlto XML API KEY} $HOSTADDRESS$
+/omd/sites/{SITENAME}/local/share/check_mk/agents/special/pan_vpns -k {XMLAPI KEY} $HOSTADDRESS$
 ```
 
 - Apply the rule to every Appliance for which you want to monitor IPSec Tunnels
